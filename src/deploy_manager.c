@@ -15,6 +15,7 @@
 #include <errno.h>
 #include <time.h>
 #include <sys/wait.h>
+#include <stdbool.h>
 #include <curl/curl.h>
 #include <zip.h>
 
@@ -70,8 +71,8 @@ static void report_deploy_status(bool success, const char *message,
 
     char status_json[8192];
     snprintf(status_json, sizeof(status_json),
-             "{\"success\":%s,\"message\":\"%s\",\"deployLog\":\"%s\",'
-             '\"timestamp\":%lld,\"projectName\":\"%s\",\"deployPath\":\"%s\"}",
+             "{\"success\":%s,\"message\":\"%s\",\"deployLog\":\"%s\","
+             "\"timestamp\":%lld,\"projectName\":\"%s\",\"deployPath\":\"%s\"}",
              success ? "true" : "false",
              esc_msg, esc_log, now, esc_name, esc_path);
 
