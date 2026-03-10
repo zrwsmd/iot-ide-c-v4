@@ -11,14 +11,14 @@ set(SDK_DIR ${CMAKE_SOURCE_DIR}/LinkSDK)
 include_directories(
     ${CMAKE_SOURCE_DIR}/include
     ${SDK_DIR}/core
-    ${SDK_DIR}/components/dm
+    ${SDK_DIR}/components/data-model
     ${SDK_DIR}/external/mbedtls/include
     ${SDK_DIR}/portfiles/aiot_port
 )
 
 # ── 收集 SDK 源文件 ──
 file(GLOB_RECURSE SDK_CORE_SRC    "${SDK_DIR}/core/*.c")
-file(GLOB_RECURSE SDK_DM_SRC      "${SDK_DIR}/components/dm/*.c")
+file(GLOB_RECURSE SDK_DM_SRC      "${SDK_DIR}/components/data-model/*.c")
 file(GLOB_RECURSE SDK_MBEDTLS_SRC "${SDK_DIR}/external/mbedtls/library/*.c")
 file(GLOB_RECURSE SDK_PORT_SRC    "${SDK_DIR}/portfiles/aiot_port/*.c")
 
