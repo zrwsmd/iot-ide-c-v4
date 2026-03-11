@@ -1,0 +1,29 @@
+# Mapping files
+mapping/
+
+# Build directories
+build/
+bin/
+lib/
+*.o
+*.a
+*.so
+*.exe
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+temp/
