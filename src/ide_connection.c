@@ -76,7 +76,7 @@ static void *heartbeat_checker(void *arg) {
 
             thing_model_post_property("hasIDEConnected", "0");
             thing_model_post_property("IDEInfo",         "\"\"");
-            thing_model_post_property("IDEHeartbeat",    "\"\"");
+            thing_model_post_property("IDEHeartbeat", "\"0\"");
         } else {
             pthread_mutex_unlock(&g_lock);
         }
@@ -112,7 +112,7 @@ void ide_conn_clear_on_startup(void) {
 
     thing_model_post_property("hasIDEConnected", "0");
     thing_model_post_property("IDEInfo",         "\"\"");
-    thing_model_post_property("IDEHeartbeat",    "\"\"");
+    thing_model_post_property("IDEHeartbeat", "\"0\"");
 }
 
 void ide_conn_handle_connect(const char *params_json,
@@ -142,7 +142,12 @@ void ide_conn_handle_connect(const char *params_json,
         char hb_buf[32];
         snprintf(hb_buf, sizeof(hb_buf), "\"%lld\"", now);
         thing_model_post_property("hasIDEConnected", "1");
-        thing_model_post_property("IDEInfo",         ide_info[0] ? ide_info : "\"{\"}\"");
+        char ide_info_json[768];
+    snprintf(ide_info_json, sizeof(ide_info_json),
+            "{\"clientId\":\"%s\",\"clientInfo\":\"%s\",\"connectTime\":%lld}",
+            client_id, ide_info, now);
+    thing_model_post_property("IDEInfo", ide_info_json);
+        //thing_model_post_property("IDEInfo",         ide_info[0] ? ide_info : "\"{\"}\"");
         thing_model_post_property("IDEHeartbeat",    hb_buf);
 
         snprintf(reply_json, reply_len,
@@ -161,10 +166,32 @@ void ide_conn_handle_connect(const char *params_json,
                  "{\"success\":true,\"message\":\"reconnected\"}");
 
     } else {
-        /* 已有其他客户端占用 */
-        pthread_mutex_unlock(&g_lock);
-        snprintf(reply_json, reply_len,
-                 "{\"success\":false,\"message\":\"another client is connected\"}");
+       /* 检查心跳是否超时，超时允许抢占 */
+        long long elapsed = now - g_last_hb_ms;
+        if (elapsed > HEARTBEAT_TIMEOUT_MS) {
+            /* 超时，允许抢占 */
+            g_connected = true;
+            strncpy(g_client_id, client_id, sizeof(g_client_id) - 1);
+            strncpy(g_ide_info,  ide_info,  sizeof(g_ide_info) - 1);
+            g_last_hb_ms = now;
+            pthread_mutex_unlock(&g_lock);
+
+            char ide_info_json[768];
+            snprintf(ide_info_json, sizeof(ide_info_json),
+                    "{\"clientId\":\"%s\",\"clientInfo\":\"%s\",\"connectTime\":%lld}",
+                    client_id, ide_info, now);
+            char hb_buf[32];
+            snprintf(hb_buf, sizeof(hb_buf), "\"%lld\"", now);
+            thing_model_post_property("hasIDEConnected", "1");
+            thing_model_post_property("IDEInfo",         ide_info_json);
+            thing_model_post_property("IDEHeartbeat",    hb_buf);
+            snprintf(reply_json, reply_len,
+                    "{\"success\":true,\"message\":\"原连接已超时，连接成功\"}");
+        } else {
+            pthread_mutex_unlock(&g_lock);
+            snprintf(reply_json, reply_len,
+                    "{\"success\":false,\"message\":\"another client is connected\"}");
+        }
     }
 }
 
@@ -188,7 +215,8 @@ void ide_conn_handle_disconnect(const char *params_json,
 
     thing_model_post_property("hasIDEConnected", "0");
     thing_model_post_property("IDEInfo",         "\"\"");
-    thing_model_post_property("IDEHeartbeat",    "\"\"");
+    thing_model_post_property("IDEHeartbeat", "\"0\"");
+    //thing_model_post_property("IDEHeartbeat",    "\"\"");
 
     snprintf(reply_json, reply_len,
              "{\"success\":true,\"message\":\"disconnected\"}");
