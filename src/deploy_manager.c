@@ -193,6 +193,7 @@ typedef struct {
     char download_url[1024];
     char deploy_path[512];
     char deploy_command[512];
+    char start_command[512];    
 } deploy_task_t;
 
 #define APPEND_LOG(fmt, ...) do { \
@@ -246,6 +247,17 @@ static void *deploy_worker(void *arg) {
         APPEND_LOG("%s\ncommand done\n", step_log);
     }
 
+    /* 后台启动，不检查退出码（对应 Java 的 runBackground方法） */
+    if (task->start_command[0] != '\0') {
+        APPEND_LOG("=== start service ===\n$ %s\n", task->start_command);
+        char bg_cmd[2048];
+        snprintf(bg_cmd, sizeof(bg_cmd), "cd '%s' && %s &",
+                target_path, task->start_command);
+        int rc = system(bg_cmd);
+        (void)rc;
+        APPEND_LOG("service started in background\n");
+    }
+
     APPEND_LOG("=== deploy success ===\n");
     report_deploy_status(true, "deploy success", log_buf,
                          task->project_name, target_path);
@@ -276,6 +288,7 @@ void deploy_manager_handle(const char *params_json,
     extract_param(params_json, "downloadUrl",   task->download_url,   sizeof(task->download_url));
     extract_param(params_json, "deployPath",    task->deploy_path,    sizeof(task->deploy_path));
     extract_param(params_json, "deployCommand", task->deploy_command, sizeof(task->deploy_command));
+    extract_param(params_json, "startCommand", task->start_command, sizeof(task->start_command));
 
     if (task->project_name[0] == '\0') strcpy(task->project_name, "project");
     if (task->deploy_path[0]  == '\0') strcpy(task->deploy_path,  "/tmp/deploy");
