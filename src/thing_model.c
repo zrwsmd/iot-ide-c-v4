@@ -9,6 +9,7 @@
 #include "thing_model.h"
 #include "ide_connection.h"
 #include "deploy_manager.h"
+#include "start_manager.h"
 
 #include "aiot_dm_api.h"
 #include "aiot_mqtt_api.h"
@@ -88,6 +89,7 @@ void thing_model_init(void *mqtt_handle,
     /* 初始化子模块 */
     ide_conn_init(g_dm_handle);
     deploy_manager_init(g_dm_handle);
+    start_manager_init(g_dm_handle);
 
     /* 清除云端缓存状态 */
     ide_conn_clear_on_startup();
@@ -98,6 +100,7 @@ void thing_model_init(void *mqtt_handle,
 void thing_model_destroy(void) {
     ide_conn_destroy();
     deploy_manager_destroy();
+    start_manager_destroy();
     if (g_dm_handle) {
         aiot_dm_deinit(&g_dm_handle);
         g_dm_handle = NULL;
@@ -111,7 +114,7 @@ int thing_model_post_property(const char *property_id,
 
     /* 构造 params JSON: {"propertyId": value} */
     char params[1024];
-    snprintf(params, sizeof(params), "{\"\%s\":%s}", property_id, value_json);
+    snprintf(params, sizeof(params), "{\"%s\":%s}", property_id, value_json);
 
     aiot_dm_msg_t msg;
     memset(&msg, 0, sizeof(msg));
@@ -137,6 +140,8 @@ void thing_model_on_service_invoke(const char *service_id,
         ide_conn_handle_heartbeat(params_json, reply_json, reply_len);
     } else if (strcmp(service_id, "deployProject") == 0) {
         deploy_manager_handle(params_json, reply_json, reply_len);
+    } else if (strcmp(service_id, "startProject") == 0) {
+        start_manager_handle(params_json, reply_json, reply_len);
     } else if (strcmp(service_id, "restart") == 0) {
         snprintf(reply_json, reply_len,
                  "{\"success\":true,\"message\":\"restarting\"}");
